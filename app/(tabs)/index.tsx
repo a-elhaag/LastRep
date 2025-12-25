@@ -6,7 +6,13 @@ import Animated, { FadeIn, FadeInDown, Layout } from "react-native-reanimated";
 import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { ExerciseCard } from "@/components/workout/ExerciseCard";
 import { Colors } from "@/constants/theme";
-import { formatSessionDuration, formatTime } from "@/lib/notifications";
+import {
+  formatSessionDuration,
+  formatTime,
+  initAudio,
+  playCompletionSound,
+  playStartSound,
+} from "@/lib/notifications";
 import { getActivePlan } from "@/lib/plan";
 import { useAppState } from "@/lib/store";
 import { ExercisePlan } from "@/lib/types";
@@ -18,6 +24,11 @@ export default function WorkoutScreen() {
     plan?.days[0]?.id
   );
   const [tick, setTick] = React.useState(0);
+
+  // Initialize audio on mount
+  React.useEffect(() => {
+    initAudio();
+  }, []);
 
   // Keep tick updating for timer display
   React.useEffect(() => {
@@ -61,15 +72,14 @@ export default function WorkoutScreen() {
     }
   }, [activeDayId, plan?.id]);
 
-  // Handle rest timer completion
+  // Handle rest timer completion with sound
   React.useEffect(() => {
     if (!state.restTimerEndsAt) return;
     const remaining = new Date(state.restTimerEndsAt).getTime() - Date.now();
     if (remaining <= 0) {
       setState((prev) => ({ ...prev, restTimerEndsAt: undefined }));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {}
-      );
+      // Play completion sound and haptic
+      playCompletionSound();
     }
   }, [tick, state.restTimerEndsAt]);
 
@@ -128,7 +138,7 @@ export default function WorkoutScreen() {
       ...prev,
       activeSession: { startedAt: new Date().toISOString() },
     }));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    playStartSound();
   };
 
   const stopSession = () => {
