@@ -461,7 +461,19 @@ export default function WorkoutScreen() {
             style={[styles.notificationButton, styles.notificationButtonGhost]}
             disabled={!activeDay?.exercises?.length}
             onPress={() => {
-              const exerciseName = activeDay.exercises[0]?.name;
+              // Find the most recently logged exercise from today's workout
+              const todaysLogs = state.workoutLogs
+                .filter((log) => log.date === today)
+                .filter((log) => 
+                  activeDay.exercises.some((ex) => ex.name === log.exerciseName)
+                );
+              
+              // Use the most recent exercise, or fall back to the first exercise
+              const mostRecentLog = todaysLogs.length > 0
+                ? todaysLogs[todaysLogs.length - 1]
+                : null;
+              const exerciseName = mostRecentLog?.exerciseName || activeDay.exercises[0]?.name;
+              
               if (!exerciseName) return;
               scheduleRestReminder(
                 exerciseName,
