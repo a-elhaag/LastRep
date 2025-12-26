@@ -99,9 +99,10 @@ export default function WorkoutScreen() {
   // Cancel scheduled reminders when rest timer clears
   React.useEffect(() => {
     if (!state.restTimerEndsAt) {
-      cancelRestReminder();
+      // Cancel any scheduled rest reminder notification when the timer is cleared
+      cancelScheduledNotification("rest-timer");
     }
-  }, [cancelRestReminder, state.restTimerEndsAt]);
+  }, [state.restTimerEndsAt]);
 
   // Handle notification actions for logging and snoozing
   React.useEffect(() => {
