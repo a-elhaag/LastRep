@@ -469,9 +469,7 @@ export default function WorkoutScreen() {
                 );
               
               // Use the most recent exercise, or fall back to the first exercise
-              const mostRecentLog = todaysLogs.length > 0
-                ? todaysLogs[todaysLogs.length - 1]
-                : null;
+              const mostRecentLog = todaysLogs.at(-1) ?? null;
               const exerciseName = mostRecentLog?.exerciseName || activeDay.exercises[0]?.name;
               
               if (!exerciseName) return;
