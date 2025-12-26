@@ -1,10 +1,23 @@
-// Timer utilities with audio notifications
+// Timer utilities with audio notifications + native notification hooks
 // Works in Expo Go without issues
 
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 
 let sound: Audio.Sound | null = null;
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowAlert: true,
+  }),
+});
+
+const REST_CATEGORY = "training-rest";
+const REST_CHANNEL = "training-reminders";
 
 // Initialize audio settings
 export async function initAudio() {
@@ -16,6 +29,116 @@ export async function initAudio() {
     });
   } catch (e) {
     // Ignore errors in Expo Go
+  }
+}
+
+export async function primeNotifications() {
+  const [allowed] = await Promise.all([
+    ensureNotificationPermissions(),
+    configureChannels(),
+  ]);
+  return allowed;
+}
+
+export async function ensureNotificationPermissions() {
+  try {
+    const existing = await Notifications.getPermissionsAsync();
+    if (existing.status === "granted") {
+      return true;
+    }
+    const requested = await Notifications.requestPermissionsAsync({
+      ios: { allowAlert: true, allowSound: true, allowBadge: false },
+    });
+    return requested.status === "granted";
+  } catch {
+    return false;
+  }
+}
+
+async function configureChannels() {
+  try {
+    await Notifications.setNotificationCategoryAsync(REST_CATEGORY, [
+      {
+        identifier: "log_set",
+        buttonTitle: "Log set",
+        options: {
+          isAuthenticationRequired: false,
+        },
+      },
+      {
+        identifier: "snooze_rest",
+        buttonTitle: "Snooze 2m",
+        options: {
+          isDestructive: false,
+        },
+      },
+    ]);
+
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync(REST_CHANNEL, {
+        name: "Training reminders",
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 200, 120, 200],
+        sound: "default",
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        enableLights: true,
+      });
+    }
+  } catch {
+    // Ignore configuration failures in environments that don't support it
+  }
+}
+
+export async function scheduleRestNotification({
+  exerciseName,
+  restSeconds,
+  planName,
+  snoozeSeconds = 120,
+}: {
+  exerciseName: string;
+  restSeconds: number;
+  planName?: string;
+  snoozeSeconds?: number;
+}) {
+  const allowed = await ensureNotificationPermissions();
+  if (!allowed || restSeconds <= 0) {
+    return undefined;
+  }
+
+  await configureChannels();
+
+  try {
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `${exerciseName} is ready`,
+        body:
+          "Time to log your next set — act here to stay in flow without reopening the app.",
+        sound: true,
+        categoryIdentifier: REST_CATEGORY,
+        data: {
+          type: "rest-reminder",
+          exerciseName,
+          planName,
+          snoozeSeconds,
+        },
+      },
+      trigger: {
+        seconds: Math.max(1, Math.round(restSeconds)),
+        channelId: REST_CHANNEL,
+      },
+    });
+    return id;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function cancelScheduledNotification(notificationId?: string) {
+  if (!notificationId) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(notificationId);
+  } catch {
+    // Ignore cancellation errors
   }
 }
 
