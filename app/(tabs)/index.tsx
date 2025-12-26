@@ -463,14 +463,15 @@ export default function WorkoutScreen() {
             onPress={() => {
               // Find the most recently logged exercise from today's workout
               const exerciseNames = new Set(activeDay.exercises.map(ex => ex.name));
-              const todaysLogs = state.workoutLogs
-                .filter((log) => 
-                  log.date === today && exerciseNames.has(log.exerciseName)
-                )
-                .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+              const todaysLogs = state.workoutLogs.filter((log) => 
+                log.date === today && exerciseNames.has(log.exerciseName)
+              );
               
-              // Use the most recent exercise, or fall back to the first exercise
-              const mostRecentLog = todaysLogs[0];
+              // Find the most recent log by comparing createdAt timestamps
+              const mostRecentLog = todaysLogs.reduce((latest, log) => 
+                !latest || log.createdAt > latest.createdAt ? log : latest
+              , null as typeof todaysLogs[0] | null);
+              
               const exerciseName = mostRecentLog?.exerciseName || activeDay.exercises[0]?.name;
               
               if (!exerciseName) return;
