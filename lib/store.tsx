@@ -21,6 +21,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     workoutLogs: [],
     bodyweightLogs: [],
     restTimerEndsAt: undefined,
+    restNotificationId: undefined,
     activeSession: undefined,
   });
   const [hydrated, setHydrated] = React.useState(false);

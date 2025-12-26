@@ -54,5 +54,6 @@ export type AppState = {
   workoutLogs: WorkoutLog[];
   bodyweightLogs: BodyweightLog[];
   restTimerEndsAt?: string;
+  restNotificationId?: string;
   activeSession?: ActiveSession;
 };
