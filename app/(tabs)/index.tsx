@@ -43,6 +43,14 @@ export default function WorkoutScreen() {
       .catch(() => setNotificationsReady(false));
   }, []);
 
+  // Cleanup: cancel any scheduled notifications when the workout screen unmounts
+  React.useEffect(() => {
+    return () => {
+      Notifications.cancelAllScheduledNotificationsAsync().catch(() => {
+        // Ignore cleanup errors
+      });
+    };
+  }, []);
   // Keep tick updating for timer display
   React.useEffect(() => {
     const interval = setInterval(() => setTick((prev) => prev + 1), 1000);
